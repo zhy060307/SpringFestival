@@ -5,13 +5,19 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Typeface;
 import android.os.Bundle;
-import android.os.Environment;
 import android.provider.MediaStore;
 import android.view.View;
 import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+
+import com.tencent.mm.sdk.modelmsg.SendMessageToWX;
+import com.tencent.mm.sdk.modelmsg.WXImageObject;
+import com.tencent.mm.sdk.modelmsg.WXMediaMessage;
+import com.tencent.mm.sdk.modelmsg.WXWebpageObject;
+import com.tencent.mm.sdk.openapi.IWXAPI;
+import com.tencent.mm.sdk.openapi.WXAPIFactory;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -24,8 +30,12 @@ public class MainActivity extends Activity implements View.OnClickListener {
     private EditText contentView;
     private Button shareButton;
 
+    private IWXAPI api;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        api = WXAPIFactory.createWXAPI(this, "wxcbcdd97297f193b7", false);
+        api.registerApp("wxcbcdd97297f193b7");
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_main);
@@ -60,21 +70,35 @@ public class MainActivity extends Activity implements View.OnClickListener {
                 startActivityForResult(intent, 1000);
                 break;
             case R.id.btn_share:
-                createPic();
+                share();
+                shareButton.setVisibility(View.VISIBLE);
+//                createPic();
                 break;
         }
     }
 
-    private void createPic() {
+    private void share() {
+        WXWebpageObject webpage = new WXWebpageObject();
+        WXMediaMessage msg = new WXMediaMessage(webpage);
+        msg.mediaObject = new WXImageObject(createBitmap());
+
+        SendMessageToWX.Req req = new SendMessageToWX.Req();
+        req.transaction = String.valueOf(System.currentTimeMillis());
+        req.message = msg;
+        req.scene = SendMessageToWX.Req.WXSceneTimeline;
+        api.sendReq(req);
+    }
+
+    private Bitmap createBitmap() {
         shareButton.setVisibility(View.GONE);
         contentView.clearFocus();
         contentView.setFocusable(false);
         View view = getWindow().getDecorView();
         view.setDrawingCacheEnabled(true);
         view.buildDrawingCache();
-        Bitmap bitmap = view.getDrawingCache();
-        String path = Environment.getExternalStorageDirectory().getPath() + "/springfastival.png";
-        saveBitmap(bitmap, path);
+        return view.getDrawingCache();
+//        String path = Environment.getExternalStorageDirectory().getPath() + "/springfastival.png";
+//        saveBitmap(bitmap, path);
     }
 
     public void saveBitmap(Bitmap bm, String picName) {
